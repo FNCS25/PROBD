@@ -146,7 +146,7 @@ INSERT INTO wiki_tags (tag_name) VALUES
 ('Важно'),
 ('Срочно');
 
---4. СОЗДАЕМ СТАТЬИ (10 статей) 
+--СТАТЬИ
 INSERT INTO wiki_articles (article_title, article_content, created_by_user_id) VALUES
 ('Полное руководство по SQL для начинающих', 'SQL (Structured Query Language) - язык запросов для работы с реляционными базами данных. Основные команды: SELECT, INSERT, UPDATE, DELETE. JOIN-запросы: INNER JOIN, LEFT JOIN, RIGHT JOIN. Практические примеры и упражнения.', 1),
 ('Python в анализе данных: Pandas и NumPy', 'Библиотеки для анализа данных на Python. Pandas для работы с таблицами, NumPy для математических операций, Matplotlib для визуализации. Пример анализа реальных данных.', 2),
@@ -161,69 +161,75 @@ INSERT INTO wiki_articles (article_title, article_content, created_by_user_id) V
 
 --СТАТЬИ К КАТЕГОРИЯМ 
 INSERT INTO article_categories (article_id, category_id) VALUES
--- Статья 1 (SQL) → Программирование + Базы данных
+
 (1, 1), (1, 2),
--- Статья 2 (Python) → Программирование
+
 (2, 1),
--- Статья 3 (Паста) → Кулинария
+
 (3, 4),
--- Статья 4 (Зарядка) → Здоровье и спорт
+
 (4, 5),
--- Статья 5 (Инвестиции) → Финансы
+
 (5, 6),
--- Статья 6 (React) → Веб-разработка + Программирование
+
 (6, 3), (6, 1),
--- Статья 7 (Docker) → Веб-разработка
+
 (7, 3),
--- Статья 8 (Питание) → Здоровье и спорт
+
 (8, 5),
--- Статья 9 (Италия) → Путешествия
+
 (9, 7),
--- Статья 10 (Квантовая физика) → Наука
+
 (10, 8);
 
 --СТАТЬИ К ТЕГАМ
 INSERT INTO article_tags (article_id, tag_id) VALUES
--- Статья 1: SQL (теги 1,12,15)
+
 (1, 1), (1, 12), (1, 15),
--- Статья 2: Python (теги 2,12,13)
+
 (2, 2), (2, 12), (2, 13),
--- Статья 3: Паста (теги 7,13)
+
 (3, 7), (3, 13),
--- Статья 4: Зарядка (теги 8,13,17)
+
 (4, 8), (4, 13), (4, 17),
--- Статья 5: Инвестиции (теги 9,12,15)
+
 (5, 9), (5, 12), (5, 15),
--- Статья 6: React (теги 3,4,12)
+
 (6, 3), (6, 4), (6, 12),
--- Статья 7: Docker (теги 6,13,16)
+
 (7, 6), (7, 13), (7, 16),
--- Статья 8: Питание (теги 13,17)
+
 (8, 13), (8, 17),
--- Статья 9: Италия (теги 10,13)
+
 (9, 10), (9, 13),
--- Статья 10: Квантовая физика (теги 11,14)
+
 (10, 11), (10, 14);
 
---КОММЕНТАРИИ 
+--КОМЫ
 INSERT INTO article_comments (article_id, user_id, comment_text) VALUES
--- Комментарии к статье 1 (SQL)
+
 (1, 2, 'Отличная статья! Очень понятно для новичков.'),
+
 (1, 3, 'Не хватает примеров с оконными функциями.'),
+
 (1, 4, 'Спасибо, очень полезный материал для подготовки к собеседованию.'),
--- Комментарии к статье 3 (Паста)
+
 (3, 1, 'Пробовал готовить по этому рецепту - получилось восхитительно!'),
+
 (3, 5, 'А можно заменить панчетту на обычный бекон?'),
--- Комментарии к статье 4 (Зарядка)
+
 (4, 2, 'Делаю эту зарядку каждое утро уже месяц - чувствую себя прекрасно!'),
+
 (4, 3, 'Для новичков лучше начинать с меньшего количества повторов.'),
--- Комментарии к статье 5 (Инвестиции)
+
 (5, 1, 'Хорошая статья для тех, кто только начинает инвестировать.'),
+
 (5, 4, 'Не согласен по поводу депозитов - инфляция съедает всю доходность.'),
--- Комментарии к статье 6 (React)
+
 (6, 5, 'Отличное введение в React! Жду продолжения про Redux.'),
--- Комментарии к статье 9 (Италия)
+
 (9, 1, 'Были по этому маршруту в прошлом году - незабываемо!'),
+
 (9, 2, 'Советую добавить Сиену в маршрут - прекрасный город.');
 
 --СТАТЬИ В ИЗБРАННОЕ
@@ -256,3 +262,64 @@ INSERT INTO article_ratings (article_id, user_id, rating_value) VALUES
 (9, 1, 5), (9, 3, 5), (9, 4, 4),
 -- Статья 10
 (10, 2, 4), (10, 5, 5);
+
+--САМЫЕ ПОПУЛЯРНЫЕ СТАТЬИ
+SELECT 
+    a.article_title AS "Статья",
+    u.username AS "Автор",
+    ROUND(AVG(r.rating_value)::numeric, 2) AS "Средняя оценка",
+    COUNT(r.rating_id) AS "Кол-во оценок",
+    COUNT(f.favorite_id) AS "В избранном",
+    (ROUND(AVG(r.rating_value)::numeric, 2) * 10 + 
+     COUNT(f.favorite_id) * 5) AS "Общий балл"
+FROM wiki_articles a
+JOIN wiki_users u ON a.created_by_user_id = u.user_id
+LEFT JOIN article_ratings r ON a.article_id = r.article_id
+LEFT JOIN user_favorites f ON a.article_id = f.article_id
+GROUP BY a.article_id, a.article_title, u.username
+HAVING COUNT(r.rating_id) >= 1
+ORDER BY "Общий балл" DESC
+LIMIT 10;
+
+--МАССИВ
+SELECT 
+    u.user_id,
+    u.username,
+    u.email,
+    u.created_at,
+    JSON_AGG(
+        JSON_BUILD_OBJECT(
+            'article_id', a.article_id,
+            'article_title', a.article_title,
+            'article_content', LEFT(a.article_content, 100) || '...', -- обрезаю текст чтоб кратко было
+            'created_at', a.created_at,
+            'updated_at', a.updated_at,
+            'is_published', a.is_published,
+            'comment_count', COALESCE(c.comment_count, 0)
+        ) ORDER BY a.created_at DESC
+    ) AS articles_array
+FROM wiki_users u
+LEFT JOIN wiki_articles a ON u.user_id = a.created_by_user_id
+LEFT JOIN (
+    SELECT article_id, ROUND(AVG(rating_value)::numeric, 2) AS avg_rating
+    FROM article_ratings
+    GROUP BY article_id
+) r ON a.article_id = r.article_id
+LEFT JOIN (
+    SELECT article_id, COUNT(*) AS comment_count
+    FROM article_comments
+    GROUP BY article_id
+) c ON a.article_id = c.article_id
+GROUP BY u.user_id
+ORDER BY u.user_id;
+
+--СРЕДНИЙ РЕЙТИНГ КАЖДОЙ СТАТЬИ
+SELECT 
+    a.article_id,
+    a.article_title,
+    ROUND(AVG(ar.rating_value)::numeric, 2) AS average_rating,
+    COUNT(ar.rating_value) AS ratings_count
+FROM wiki_articles a
+LEFT JOIN article_ratings ar ON a.article_id = ar.article_id
+GROUP BY a.article_id, a.article_title
+ORDER BY average_rating DESC NULLS LAST;
